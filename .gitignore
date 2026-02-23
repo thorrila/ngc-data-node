@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv/
+env/
+venv/
+.python-version
+
+# Rust
+processor/target/
+**/*.rs.bk
+
+# Data (Ignore massive files, but allow small tracked ones)
+*.parquet
+*.vcf
+# We want to explicitly allow your sample file though:
+!data/sample.vcf
+
+# OS/Editor
+.DS_Store
+.vscode/
+.idea/
