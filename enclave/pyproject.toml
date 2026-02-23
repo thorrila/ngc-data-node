@@ -1,7 +1,28 @@
+[build-system]
+requires = ["uv_build>=0.9.22,<0.10.0"]
+build-backend = "uv_build"
+
 [project]
-name = "enclave"
+name = "ngc-enclave"
 version = "0.1.0"
-description = "Add your description here"
+description = "Secure Python API Enclave for National Genome Center Data"
+authors = [
+  { name = "Thorri Elis Halldoruson", email = "thorri@example.com" },
+]
 readme = "README.md"
-requires-python = ">=3.13"
-dependencies = []
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi[standard]>=0.131.0",
+    "pandas>=3.0.1",
+    "pyarrow>=23.0.1",
+    "pydantic>=2.12.5",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "ruff>=0.15.2",
+]
+
+[tool.ruff]
+line-length = 120
