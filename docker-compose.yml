@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ngc
+      POSTGRES_PASSWORD: ngc
+      POSTGRES_DB: ngc
+    ports: 
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ngc -d ngc"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+volumes:
+  pgdata:
