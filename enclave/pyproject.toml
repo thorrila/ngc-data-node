@@ -13,16 +13,24 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi[standard]>=0.131.0",
-    "pandas>=3.0.1",
     "pyarrow>=23.0.1",
     "pydantic>=2.12.5",
+    "pydantic-settings>=2.4.0",
+    "duckdb>=1.1.0",
+    "sqlmodel>=0.0.21",
+    "asyncpg>=0.30.0"
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
     "ruff>=0.15.2",
+    "httpx>=0.27.0"
 ]
 
 [tool.ruff]
 line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP"]
+ignore = ["E501"]
