@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Rust dependencies (Cargo.toml)
+  - package-ecosystem: cargo
+    directory: /processor
+    schedule:
+      interval: weekly
+
+  # Python dependencies (pyproject.toml)
+  - package-ecosystem: pip
+    directory: /enclave
+    schedule:
+      interval: weekly
+
+  # GitHub Actions versions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
