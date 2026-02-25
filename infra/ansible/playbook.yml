@@ -1,0 +1,52 @@
+# Run with:
+# - ansible-playbook infra/ansible/playbook.yml
+# - ansible-playbook infra/ansible/playbook.yml --tags postgres   (DB only)
+
+- name: Deploy NGC Data Node
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  vars:
+    project_root: "{{ playbook_dir | dirname | dirname }}"
+    compose_file: "{{ project_root }}/docker-compose.yml"
+
+  tasks:
+    # Docker healthcheck
+    - name: Verify Docker daemon is running
+      command: docker info
+      register: docker_info
+      failed_when: docker_info.rc != 0
+      changed_when: false
+      tags: [always]
+
+    # PostgreSQL
+    - name: Start PostgreSQL via Docker Compose
+      command: docker compose -f "{{ compose_file }}" up -d
+      tags: [postgres]
+
+    - name: Wait for PostgreSQL to be healthy
+      command: >
+        docker inspect
+        --format='{{ "{{" }}.State.Health.Status{{ "}}" }}'
+        ngc-data-node-postgres-1
+      register: pg_health
+      until: pg_health.stdout | trim == "healthy"
+      retries: 12
+      delay: 5
+      changed_when: false
+      tags: [postgres]
+
+    # Rust Engine
+    - name: Build Rust processor (release)
+      command: cargo build --release
+      args:
+        chdir: "{{ project_root }}/processor"
+      tags: [rust]
+
+    # Python Enclave
+    - name: Install Python enclave dependencies
+      command: uv sync
+      args:
+        chdir: "{{ project_root }}/enclave"
+      tags: [python]
