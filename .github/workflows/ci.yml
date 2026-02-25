@@ -65,4 +65,5 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Run tests
-        run: uv run pytest --tb=short
+        # Exit code 5 = no tests collected (acceptable on infra-only branches)
+        run: uv run pytest --tb=short; code=$?; [ $code -eq 0 ] || [ $code -eq 5 ]
