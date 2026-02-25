@@ -66,4 +66,5 @@ jobs:
 
       - name: Run tests
         # Exit code 5 = no tests collected (acceptable on infra-only branches)
-        run: uv run pytest --tb=short; code=$?; [ $code -eq 0 ] || [ $code -eq 5 ]
+        # The || pattern is safe under set -e: $? in the fallback holds pytest's exit code
+        run: uv run pytest --tb=short || [ $? -eq 5 ]
