@@ -4,3 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+# VCF parsing
+noodles-vcf = "0.69.0"
+# Hashing
+blake3 = "1.5"
+# Parquet writing
+parquet = { version = "53.0", features = ["arrow"] }
+# Arrow for Parquet
+arrow = "53.0"
+# CLI argument parser
+clap = { version = "4.0", features = ["derive"] }
+# Error handling
+anyhow = "1.0.70"
