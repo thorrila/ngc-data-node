@@ -1,6 +1,82 @@
-def main():
-    print("Hello from enclave!")
+import asyncio
+import os
+from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Annotated, Any
+
+from fastapi import Depends, FastAPI, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from .audit import Base, log_request
+from .db import engine, get_db
+from .query import query_variants
+
+# Default Parquet path — override with PARQUET_PATH env var in production
+PARQUET_PATH = os.getenv(
+    "PARQUET_PATH",
+    str(Path(__file__).parent.parent.parent.parent / "data" / "output.parquet"),
+)
 
 
-if __name__ == "__main__":
-    main()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create DB tables on startup — retries because Postgres may still be initialising
+    for attempt in range(10):
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            print("✓ Database tables ready")
+            break
+        except Exception as e:
+            if attempt == 9:
+                print(f"✗ Could not connect after 10 attempts: {e}")
+            else:
+                wait = min(2**attempt, 5)  # exponential backoff, capped at 5s
+                print(f"  DB not ready (attempt {attempt + 1}/10) — retrying in {wait}s...")
+                await asyncio.sleep(wait)
+    yield  # app runs here; cleanup goes after yield if needed
+
+
+app = FastAPI(
+    title="NGC Secure Enclave",
+    description="Controlled access layer for anonymised genomic variant data.",
+    version="0.1.0",
+    lifespan=lifespan,
+)
+
+
+@app.get("/health")
+async def health():
+    """Liveness check — returns 200 if the server is running."""
+    return {"status": "ok"}
+
+
+@app.get("/variants")
+async def get_variants(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    chr: str | None = None,
+    pos_min: int | None = None,
+    pos_max: int | None = None,
+) -> list[dict[str, Any]]:
+    """Query genomic variants from Parquet. All filters optional."""
+    try:
+        results = query_variants(PARQUET_PATH, chrom=chr, pos_min=pos_min, pos_max=pos_max)
+    except Exception as e:
+        await log_request(db, "/variants", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 500)
+        raise HTTPException(status_code=500, detail=str(e))
+
+    await log_request(db, "/variants", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 200)
+    return results
+
+
+@app.get("/datasets")
+async def list_datasets(
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[dict[str, Any]]:
+    """List all ingested datasets from Postgres."""
+    from sqlalchemy import text
+
+    result = await db.execute(text("SELECT * FROM datasets ORDER BY ingested_at DESC"))
+    rows = result.fetchall()
+    await log_request(db, "/datasets", {}, 200)
+    return [dict(row._mapping) for row in rows]
