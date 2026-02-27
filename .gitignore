@@ -22,3 +22,4 @@ processor/target/
 .DS_Store
 .vscode/
 .idea/
+profile.json.gz
