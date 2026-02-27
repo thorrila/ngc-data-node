@@ -4,7 +4,8 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Any
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Security, status
+from fastapi.security import APIKeyHeader
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .audit import Base, log_request
@@ -16,6 +17,25 @@ PARQUET_PATH = os.getenv(
     "PARQUET_PATH",
     str(Path(__file__).parent.parent.parent.parent / "data" / "output.parquet"),
 )
+
+# API Security configuration
+API_KEY = os.getenv("NGC_API_KEY", "ngc-secret-admin-token")
+api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
+
+
+async def verify_api_key(api_key: str = Security(api_key_header)):
+    if not api_key:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing Authorization Header")
+
+    # Support 'Bearer <token>' or just the raw token
+    token = api_key.replace("Bearer ", "") if api_key.startswith("Bearer ") else api_key
+
+    if token != API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API Key",
+        )
+    return token
 
 
 @asynccontextmanager
@@ -54,6 +74,7 @@ async def health():
 @app.get("/variants")
 async def get_variants(
     db: Annotated[AsyncSession, Depends(get_db)],
+    api_key: Annotated[str, Depends(verify_api_key)],
     chr: str | None = None,
     pos_min: int | None = None,
     pos_max: int | None = None,
@@ -72,6 +93,7 @@ async def get_variants(
 @app.get("/datasets")
 async def list_datasets(
     db: Annotated[AsyncSession, Depends(get_db)],
+    api_key: Annotated[str, Depends(verify_api_key)],
 ) -> list[dict[str, Any]]:
     """List all ingested datasets from Postgres."""
     from sqlalchemy import text
