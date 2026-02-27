@@ -38,7 +38,7 @@ fn main() -> Result<()> {
 
     println!(
         "Parsed {} variants. Writing to {:?}...",
-        records.len(),
+        records.num_rows(),
         cli.output
     );
 
