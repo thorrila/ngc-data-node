@@ -22,6 +22,7 @@
                         rustc
                         clippy  # Rust Linter
                         rustfmt # Rust Formatter
+                        libiconv # For cargo-flamegraph
 
                         # Python
                         python311
@@ -58,6 +59,8 @@
                             echo "ngc build                   - 11. Compiles Rust Engine for production"
                             echo "ngc deploy                  - 12. Deploys Infrastructure using Ansible"
                             echo "ngc db-down                 - 13. Tears down PostgreSQL database"
+                            echo "ngc bench                   - 14. Runs Criterion benchmarks on the Rust Processor"
+                            echo "ngc profile                 - 15. Runs Samply to generate a CPU flamegraph"
                             echo "------------------------------------------------------"
 
                         elif [ "$1" = "run" ]; then
@@ -67,6 +70,15 @@
 
                             echo "Running Rust Processor on $INPUT -> $OUTPUT"
                             (cd "$NGC_ROOT/processor" && cargo run -- --input "$NGC_ROOT/$INPUT" --output "$NGC_ROOT/$OUTPUT")
+
+                        elif [ "$1" = "bench" ]; then
+                            echo "Running Micro-Benchmarks cleanly inside Nix Environment..."
+                            (cd "$NGC_ROOT/processor" && cargo bench)
+
+                        elif [ "$1" = "profile" ]; then
+                            echo "Running CPU Profiler (Samply)..."
+                            echo "This will automatically open a Firefox Profiler tab in your browser when finished."
+                            (cd "$NGC_ROOT/processor" && samply record cargo bench)
 
                         elif [ "$1" = "build" ]; then
                             echo "Building Rust Processor..."
