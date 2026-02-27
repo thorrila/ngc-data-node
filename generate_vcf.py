@@ -1,4 +1,5 @@
 import random
+
 with open("data/synthetic_100k.vcf", "w") as f:
     f.write("##fileformat=VCFv4.2\n")
     f.write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE_1\n")
