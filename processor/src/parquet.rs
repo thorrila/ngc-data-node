@@ -12,9 +12,8 @@ pub fn write_parquet(batch: &RecordBatch, output_path: &Path) -> Result<()> {
         .set_compression(parquet::basic::Compression::SNAPPY)
         .build();
     let mut writer = ArrowWriter::try_new(file, batch.schema(), Some(props))?;
-    writer.write(&batch)?;
+    writer.write(batch)?;
     writer.close()?; // flushes and finalises the file
 
     Ok(())
 }
-
