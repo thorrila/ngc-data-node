@@ -16,3 +16,13 @@ arrow = "53.0"
 clap = { version = "4.0", features = ["derive"] }
 # Error handling
 anyhow = "1.0.70"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "vcf_benchmark"
+harness = false
+
+[profile.bench]
+debug = true

@@ -66,7 +66,7 @@
                             OUTPUT=''${3:-"output.json"}
 
                             echo "Running Rust Processor on $INPUT -> $OUTPUT"
-                            (cd "$NGC_ROOT/processor" && cargo run -- "$NGC_ROOT/$INPUT" --output "$NGC_ROOT/$OUTPUT")
+                            (cd "$NGC_ROOT/processor" && cargo run -- --input "$NGC_ROOT/$INPUT" --output "$NGC_ROOT/$OUTPUT")
 
                         elif [ "$1" = "build" ]; then
                             echo "Building Rust Processor..."

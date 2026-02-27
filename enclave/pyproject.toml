@@ -19,7 +19,8 @@ dependencies = [
     "duckdb>=1.1.0",
     "sqlmodel>=0.0.21",
     "asyncpg>=0.30.0",
-    "greenlet>=3.0.0"
+    "greenlet>=3.0.0",
+    "locust>=2.17.1"
 ]
 
 [dependency-groups]
