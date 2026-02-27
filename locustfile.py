@@ -15,13 +15,19 @@ class NGCLoadTestUser(HttpUser):
         chromosomes = ["1", "2", "3", "X", "Y"]
         chr_query = random.choice(chromosomes)
 
+        # Secure API Header
+        headers = {"Authorization": "Bearer ngc-secret-admin-token"}
+
         # Give the request a name in locust so they group cleanly by endpoint, not unique URL
-        self.client.get(f"/variants?chr={chr_query}", name="/variants?chr=[random]")
+        self.client.get(
+            f"/variants?chr={chr_query}", headers=headers, name="/variants?chr=[random]"
+        )
 
     @task(1)
     def query_dataset_list(self):
         """Simulate a user checking available datasets"""
-        self.client.get("/datasets")
+        headers = {"Authorization": "Bearer ngc-secret-admin-token"}
+        self.client.get("/datasets", headers=headers)
 
     @task(1)
     def health_check(self):
