@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .audit import Base, log_request
 from .db import engine, get_db
-from .query import query_variants
+from .query import query_allele_frequencies, query_variants
 
 # Default Parquet path — override with PARQUET_PATH env var in production
 PARQUET_PATH = os.getenv(
@@ -67,7 +67,7 @@ app = FastAPI(
 
 @app.get("/health")
 async def health():
-    """Liveness check — returns 200 if the server is running."""
+    """Health check"""
     return {"status": "ok"}
 
 
@@ -79,7 +79,7 @@ async def get_variants(
     pos_min: int | None = None,
     pos_max: int | None = None,
 ) -> list[dict[str, Any]]:
-    """Query genomic variants from Parquet. All filters optional."""
+    """Query genomic variants from Parquet."""
     try:
         results = query_variants(PARQUET_PATH, chrom=chr, pos_min=pos_min, pos_max=pos_max)
     except Exception as e:
@@ -102,3 +102,21 @@ async def list_datasets(
     rows = result.fetchall()
     await log_request(db, "/datasets", {}, 200)
     return [dict(row._mapping) for row in rows]
+
+
+@app.get("/alleles")
+async def get_alleles_frequencies(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    api_key: Annotated[str, Depends(verify_api_key)],
+    chr: str | None = None,
+    pos_min: int | None = None,
+    pos_max: int | None = None,
+) -> list[dict[str, Any]]:
+    """Query allele frequencies from Parquet."""
+    try:
+        results = query_allele_frequencies(PARQUET_PATH, chrom=chr, pos_min=pos_min, pos_max=pos_max)
+    except Exception as e:
+        await log_request(db, "/alleles", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 500)
+        raise HTTPException(status_code=500, detail=str(e))
+    await log_request(db, "/alleles", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 200)
+    return results
