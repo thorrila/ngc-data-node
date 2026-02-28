@@ -1,16 +1,17 @@
-from pathlib import Path
+import functools
 from typing import Any
 
 import duckdb
 
 
+@functools.lru_cache(maxsize=128)
 def query_variants(
-    parquet_path: str | Path,
+    parquet_path: str,
     chrom: str | None = None,
     pos_min: int | None = None,
     pos_max: int | None = None,
 ) -> list[dict[str, Any]]:
-    """Query the Parquet file using DuckDB. Filters are all optional."""
+    """Query the Parquet file using DuckDB. Results are cached to handle high concurrency."""
     path = str(parquet_path)
 
     # Build WHERE clause dynamically from whichever filters were provided
