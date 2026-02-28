@@ -1,10 +1,14 @@
-import functools
 from typing import Any
 
 import duckdb
+from cachetools import TTLCache, cached
+
+# Caches are shared across the module. TTL of 60 seconds ensures data freshness.
+variant_cache = TTLCache(maxsize=128, ttl=60)
+allele_cache = TTLCache(maxsize=128, ttl=60)
 
 
-@functools.lru_cache(maxsize=128)
+@cached(cache=variant_cache)
 def query_variants(
     parquet_path: str,
     chrom: str | None = None,
@@ -34,7 +38,7 @@ def query_variants(
     return [dict(zip(columns, row)) for row in result]
 
 
-@functools.lru_cache(maxsize=128)
+@cached(cache=allele_cache)
 def query_allele_frequencies(
     parquet_path: str,
     chrom: str | None = None,
