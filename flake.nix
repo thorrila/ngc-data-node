@@ -46,27 +46,31 @@
                         then
                             echo "------------------------------------------------------"
                             echo "Commands:"
-                            echo "ngc db-up                   - 1. Spins up PostgreSQL database in Docker"
-                            echo "ngc setup                   - 2. Installs Python Enclave dependencies"
-                            echo "ngc hooks                   - 3. Installs pre-commit Git hooks"
-                            echo "ngc run <in.vcf> <out.file> - 4. Converts raw VCFs to Parquet using Rust"
-                            echo "ngc serve                   - 5. Starts FastAPI secure enclave on localhost"
-                            echo "ngc lint                    - 6. Runs code quality checks"
-                            echo "ngc format                  - 7. Auto-formats Rust and Python code"
-                            echo "ngc test                    - 8. Runs Rust and Python unit tests"
-                            echo "ngc logs                   - 9. View API access logs from PostgreSQL"
-                            echo "ngc query <sql>             - 10. Run a custom SQL query on PostgreSQL"
-                            echo "ngc build                   - 11. Compiles Rust Engine for production"
-                            echo "ngc deploy                  - 12. Deploys Infrastructure using Ansible"
-                            echo "ngc db-down                 - 13. Tears down PostgreSQL database"
-                            echo "ngc bench                   - 14. Runs Criterion benchmarks on the Rust Processor"
-                            echo "ngc profile                 - 15. Runs Samply to generate a CPU flamegraph"
-                            echo "------------------------------------------------------"
+                            echo "ngc go                      - 0. Runs the full demo pipeline"
+                            echo "ngc setup                   - 1. Installs Python Enclave dependencies"
+                            echo "ngc hooks                   - 2. Installs pre-commit Git hooks"
+                            echo "ngc db-up                   - 3. Spins up PostgreSQL database in Docker"
+                            echo "ngc db-down                 - 4. Tears down PostgreSQL database"
+                            echo "ngc generate                - 5. Generates synthetic VCF data"
+                            echo "ngc run                     - 6. Converts raw VCFs to Parquet using Rust"
+                            echo "ngc serve                   - 7. Starts FastAPI secure enclave on localhost"
+                            echo "ngc test                    - 8. Runs Rust unit tests and Python API integration tests"
+                            echo "ngc locust                  - 9. Runs Locust API load tests"
+                            echo "ngc logs                    - 10. View API access logs from PostgreSQL"
+                            echo "ngc query <sql>             - 11. Run a custom SQL query on PostgreSQL"
+                            echo "ngc build                   - 12. Compiles Rust Engine for production"
+                            echo "ngc deploy                  - 13. Deploys Infrastructure using Ansible"
+                            echo "ngc lint                    - 14. Runs code quality checks"
+                            echo "ngc format                  - 15. Auto-formats Rust and Python code"
+                            echo "ngc polish                  - 16. Format, Lint, and Test in one go"
+                            echo "ngc bench                   - 17. Runs Criterion benchmarks on the Rust Processor"
+                            echo "ngc profile                 - 18. Runs Samply to generate a CPU flamegraph"
+                            echo "ngc clean                   - 19. Cleans data and cache files"                            echo "------------------------------------------------------"
 
                         elif [ "$1" = "run" ]; then
                             # Default values if no arguments are provided
-                            INPUT=''${2:-"data/sample.vcf"}
-                            OUTPUT=''${3:-"output.json"}
+                            INPUT=''${2:-"data/synthetic_100k.vcf"}
+                            OUTPUT=''${3:-"data/output.parquet"}
 
                             echo "Running Rust Processor on $INPUT -> $OUTPUT"
                             (cd "$NGC_ROOT/processor" && cargo run -- --input "$NGC_ROOT/$INPUT" --output "$NGC_ROOT/$OUTPUT")
@@ -96,7 +100,9 @@
 
                         elif [ "$1" = "serve" ]; then
                             echo "Starting FastAPI Secure Enclave..."
-                            # uv run ensures the command runs in the isolated virtual environment
+                            echo "🔗 Documentation: http://127.0.0.1:8000/docs"
+                            # Open browser in 2 seconds (giving the server time to start)
+                            (sleep 2 && open http://127.0.0.1:8000/docs) &
                             (cd "$NGC_ROOT/enclave" && uv run fastapi dev src/ngc_enclave/main.py)
 
                         elif [ "$1" = "lint" ]; then
@@ -114,7 +120,7 @@
                             (cd "$NGC_ROOT/enclave" && uv run ruff format .)
 
                         elif [ "$1" = "test" ]; then
-                            echo "Running Test Suites..."
+                            echo "Running Tests..."
                             echo "1. Testing Rust Engine..."
                             (cd "$NGC_ROOT/processor" && cargo test)
                             echo "2. Testing Python API..."
@@ -144,6 +150,38 @@
                             echo "Stopping PostgreSQL Database..."
                             docker compose -f "$NGC_ROOT/docker-compose.yml" down
 
+                        elif [ "$1" = "clean" ]; then
+                            echo "🧹 Cleaning up project artifacts and caches..."
+                            find "$NGC_ROOT" -name "__pycache__" -type d -exec rm -rf {} +
+                            find "$NGC_ROOT" -name ".pytest_cache" -type d -exec rm -rf {} +
+                            find "$NGC_ROOT" -name ".ruff_cache" -type d -exec rm -rf {} +
+                            rm -fv "$NGC_ROOT"/data/*.parquet 2>/dev/null || true
+                            rm -fv "$NGC_ROOT"/data/*.vcf 2>/dev/null || true
+                            echo "✓ Project is clean."
+
+                        elif [ "$1" = "generate" ]; then
+                            echo "Generating synthetic VCF data..."
+                            python3 scripts/generate_vcf.py
+
+                        elif [ "$1" = "polish" ]; then
+                            echo "Polishing the codebase (Format -> Lint -> Test)..."
+                            ngc format
+                            ngc lint
+                            ngc test
+                            echo "Codebase is polished."
+
+                        elif [ "$1" = "locust" ]; then
+                            echo "Starting Locust API Load Tester..."
+                            (cd "$NGC_ROOT/enclave" && uv run locust -f ../scripts/locustfile.py)
+
+                        elif [ "$1" = "go" ]; then
+                            echo "🚀 Setting off on the full NGC lifecycle demo..."
+                            ngc setup
+                            ngc db-up
+                            ngc generate
+                            ngc run
+                            ngc serve
+
                         else
                             echo "Unknown argument '$1'. Try 'ngc help'"
                         fi
@@ -153,6 +191,7 @@
                     echo "$(python3 --version)"
                     echo "$(ruff --version)"
                     echo "$(cargo --version | cut -d' ' -f1-2)"
+                    echo "Type 'ngc go' to run the full demo pipeline."
                     echo "Type 'ngc' to see a list of commands."
                     echo "Type 'exit' to leave this isolated environment."
                     echo "------------------------------------------------------"
