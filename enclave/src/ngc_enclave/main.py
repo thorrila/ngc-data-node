@@ -19,8 +19,8 @@ PARQUET_PATH = os.getenv(
 )
 
 # API Security configuration
-API_KEY = os.getenv("NGC_API_KEY", "ngc-secret-admin-token")
-api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
+API_KEY = os.getenv("NGC_API_KEY", "ngc")
+api_key_header = APIKeyHeader(name="Authorization", description="Use **ngc** to authorize.", auto_error=False)
 
 
 async def verify_api_key(api_key: str = Security(api_key_header)):
@@ -59,7 +59,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="NGC Secure Enclave",
-    description="Controlled access layer for anonymised genomic variant data.",
+    description="**Use `ngc` to authorize.**",
     version="0.1.0",
     lifespan=lifespan,
 )
