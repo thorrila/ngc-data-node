@@ -12,6 +12,21 @@
                 pkgs = nixpkgs.legacyPackages.${system};
             in
             {
+                packages.default = pkgs.rustPlatform.buildRustPackage {
+                    pname = "ngc-processor";
+                    version = "0.1.0";
+                    src = ./processor;
+                    cargoLock.lockFile = ./processor/Cargo.lock;
+                    
+                    # Ensure iconv is available for Darwin builds (samply/flamegraph)
+                    buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.libiconv ];
+                };
+
+                apps.default = {
+                    type = "app";
+                    program = "${self.packages.${system}.default}/bin/processor";
+                };
+
                 devShells.default = pkgs.mkShell {
                     packages = with pkgs; [
                         # Version control
@@ -32,8 +47,8 @@
 
                         # Infrastructure & Databases
                         postgresql
-                        ansible # Configuration Management and Automation Tool
-                        docker-client
+                        ansible # Infrastructure provisioning
+                        docker-client # CLI only — daemon runs on the host system
                     ];
                     shellHook = ''
                     # Absolute path to project root — works from any subdirectory
@@ -46,26 +61,27 @@
                         then
                             echo "------------------------------------------------------"
                             echo "Commands:"
-                            echo "ngc go                      - 0. Runs the full demo pipeline"
-                            echo "ngc setup                   - 1. Installs Python Enclave dependencies"
-                            echo "ngc hooks                   - 2. Installs pre-commit Git hooks"
-                            echo "ngc db-up                   - 3. Spins up PostgreSQL database in Docker"
-                            echo "ngc db-down                 - 4. Tears down PostgreSQL database"
-                            echo "ngc generate                - 5. Generates synthetic VCF data"
-                            echo "ngc run                     - 6. Converts raw VCFs to Parquet using Rust"
-                            echo "ngc serve                   - 7. Starts FastAPI secure enclave on localhost"
-                            echo "ngc test                    - 8. Runs Rust unit tests and Python API integration tests"
-                            echo "ngc locust                  - 9. Runs Locust API load tests"
-                            echo "ngc logs                    - 10. View API access logs from PostgreSQL"
-                            echo "ngc query <sql>             - 11. Run a custom SQL query on PostgreSQL"
-                            echo "ngc build                   - 12. Compiles Rust Engine for production"
-                            echo "ngc deploy                  - 13. Deploys Infrastructure using Ansible"
-                            echo "ngc lint                    - 14. Runs code quality checks"
-                            echo "ngc format                  - 15. Auto-formats Rust and Python code"
-                            echo "ngc polish                  - 16. Format, Lint, and Test in one go"
-                            echo "ngc bench                   - 17. Runs Criterion benchmarks on the Rust Processor"
-                            echo "ngc profile                 - 18. Runs Samply to generate a CPU flamegraph"
-                            echo "ngc clean                   - 19. Cleans data and cache files"                            echo "------------------------------------------------------"
+                            echo "ngc demo                    - 0. runs the full pipeline"
+                            echo "ngc setup                   - 1. python dependencies"
+                            echo "ngc hooks                   - 2. pre-commit hooks"
+                            echo "ngc db-up                   - 3. start database"
+                            echo "ngc generate                - 4. generate VCF data"
+                            echo "ngc run                     - 5. process VCF → Parquet"
+                            echo "ngc serve                   - 6. start API"
+                            echo "ngc deploy                  - 7. provision with Ansible"
+                            echo "ngc db-down                 - 8. stop database"
+                            echo "ngc test                    - 9. run tests (rust + python)"
+                            echo "ngc polish                  - 10. format + lint + test in one go"
+                            echo "ngc lint                    - 11. code quality checks"
+                            echo "ngc format                  - 12. auto-format"
+                            echo "ngc build                   - 13. compile release binary"
+                            echo "ngc bench                   - 14. benchmarks"
+                            echo "ngc profile                 - 15. CPU flamegraph"
+                            echo "ngc locust                  - 16. load tests"
+                            echo "ngc logs                    - 17. view audit logs"
+                            echo "ngc query <sql>             - 18. custom SQL"
+                            echo "ngc clean                   - 19. clean artifacts"                            
+                            echo "------------------------------------------------------"
 
                         elif [ "$1" = "run" ]; then
                             # Default values if no arguments are provided
@@ -143,21 +159,21 @@
                             fi
 
                         elif [ "$1" = "deploy" ]; then
-                            echo "Deploying Infrastructure with Ansible..."
-                            ansible-playbook deploy.yml
+                            echo "Deploying NGC Data Node..."
+                            ansible-playbook "$NGC_ROOT/infra/ansible/playbook.yml"     
 
                         elif [ "$1" = "db-down" ]; then
                             echo "Stopping PostgreSQL Database..."
                             docker compose -f "$NGC_ROOT/docker-compose.yml" down
 
                         elif [ "$1" = "clean" ]; then
-                            echo "🧹 Cleaning up project artifacts and caches..."
+                            echo "Cleaning up artifacts and caches..."
                             find "$NGC_ROOT" -name "__pycache__" -type d -exec rm -rf {} +
                             find "$NGC_ROOT" -name ".pytest_cache" -type d -exec rm -rf {} +
                             find "$NGC_ROOT" -name ".ruff_cache" -type d -exec rm -rf {} +
                             rm -fv "$NGC_ROOT"/data/*.parquet 2>/dev/null || true
                             rm -fv "$NGC_ROOT"/data/*.vcf 2>/dev/null || true
-                            echo "✓ Project is clean."
+                            echo "Project is clean."
 
                         elif [ "$1" = "generate" ]; then
                             echo "Generating synthetic VCF data..."
@@ -167,15 +183,17 @@
                             echo "Polishing the codebase (Format -> Lint -> Test)..."
                             ngc format
                             ngc lint
+                            ngc db-up
                             ngc test
+                            ngc db-down
                             echo "Codebase is polished."
 
                         elif [ "$1" = "locust" ]; then
                             echo "Starting Locust API Load Tester..."
                             (cd "$NGC_ROOT/enclave" && uv run locust -f ../scripts/locustfile.py)
 
-                        elif [ "$1" = "go" ]; then
-                            echo "🚀 Setting off on the full NGC lifecycle demo..."
+                        elif [ "$1" = "demo" ]; then
+                            echo "Running demo..."
                             ngc setup
                             ngc db-up
                             ngc generate
@@ -191,7 +209,7 @@
                     echo "$(python3 --version)"
                     echo "$(ruff --version)"
                     echo "$(cargo --version | cut -d' ' -f1-2)"
-                    echo "Type 'ngc go' to run the full demo pipeline."
+                    echo "Type 'ngc demo' to run the full demo pipeline."
                     echo "Type 'ngc' to see a list of commands."
                     echo "Type 'exit' to leave this isolated environment."
                     echo "------------------------------------------------------"

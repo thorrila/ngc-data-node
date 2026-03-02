@@ -16,7 +16,7 @@ class NGCLoadTestUser(HttpUser):
         chr_query = random.choice(chromosomes)
 
         # Secure API Header
-        headers = {"Authorization": "Bearer ngc-secret-admin-token"}
+        headers = {"Authorization": "Bearer ngc"}
 
         # Give the request a name in locust so they group cleanly by endpoint, not unique URL
         self.client.get(

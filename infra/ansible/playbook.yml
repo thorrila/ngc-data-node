@@ -18,7 +18,7 @@
       register: docker_info
       failed_when: docker_info.rc != 0
       changed_when: false
-      tags: [always]
+      tags: [always]  # runs regardless of --tags filter — Docker must always be verified first
 
     # PostgreSQL
     - name: Start PostgreSQL via Docker Compose

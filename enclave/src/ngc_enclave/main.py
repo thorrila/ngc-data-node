@@ -19,8 +19,8 @@ PARQUET_PATH = os.getenv(
 )
 
 # API Security configuration
-API_KEY = os.getenv("NGC_API_KEY", "ngc-secret-admin-token")
-api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
+API_KEY = os.getenv("NGC_API_KEY", "ngc")
+api_key_header = APIKeyHeader(description="API Key: ngc", name="Authorization", auto_error=False)
 
 
 async def verify_api_key(api_key: str = Security(api_key_header)):
@@ -65,6 +65,14 @@ app = FastAPI(
 )
 
 
+@app.get("/", include_in_schema=False)
+async def root():
+    """Redirect root to /docs for better discoverability."""
+    from fastapi.responses import RedirectResponse
+
+    return RedirectResponse(url="/docs")
+
+
 @app.get("/health")
 async def health():
     """Health check"""
@@ -75,18 +83,36 @@ async def health():
 async def get_variants(
     db: Annotated[AsyncSession, Depends(get_db)],
     api_key: Annotated[str, Depends(verify_api_key)],
-    chr: str | None = None,
+    chrom: str | None = None,
     pos_min: int | None = None,
     pos_max: int | None = None,
 ) -> list[dict[str, Any]]:
     """Query genomic variants from Parquet."""
     try:
-        results = query_variants(PARQUET_PATH, chrom=chr, pos_min=pos_min, pos_max=pos_max)
+        results = query_variants(PARQUET_PATH, chrom=chrom, pos_min=pos_min, pos_max=pos_max)
     except Exception as e:
-        await log_request(db, "/variants", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 500)
+        await log_request(db, "/variants", {"chrom": chrom, "pos_min": pos_min, "pos_max": pos_max}, 500)
         raise HTTPException(status_code=500, detail=str(e))
 
-    await log_request(db, "/variants", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 200)
+    await log_request(db, "/variants", {"chrom": chrom, "pos_min": pos_min, "pos_max": pos_max}, 200)
+    return results
+
+
+@app.get("/alleles")
+async def get_alleles_frequencies(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    api_key: Annotated[str, Depends(verify_api_key)],
+    chrom: str | None = None,
+    pos_min: int | None = None,
+    pos_max: int | None = None,
+) -> list[dict[str, Any]]:
+    """Query allele frequencies from Parquet."""
+    try:
+        results = query_allele_frequencies(PARQUET_PATH, chrom=chrom, pos_min=pos_min, pos_max=pos_max)
+    except Exception as e:
+        await log_request(db, "/alleles", {"chrom": chrom, "pos_min": pos_min, "pos_max": pos_max}, 500)
+        raise HTTPException(status_code=500, detail=str(e))
+    await log_request(db, "/alleles", {"chrom": chrom, "pos_min": pos_min, "pos_max": pos_max}, 200)
     return results
 
 
@@ -102,21 +128,3 @@ async def list_datasets(
     rows = result.fetchall()
     await log_request(db, "/datasets", {}, 200)
     return [dict(row._mapping) for row in rows]
-
-
-@app.get("/alleles")
-async def get_alleles_frequencies(
-    db: Annotated[AsyncSession, Depends(get_db)],
-    api_key: Annotated[str, Depends(verify_api_key)],
-    chr: str | None = None,
-    pos_min: int | None = None,
-    pos_max: int | None = None,
-) -> list[dict[str, Any]]:
-    """Query allele frequencies from Parquet."""
-    try:
-        results = query_allele_frequencies(PARQUET_PATH, chrom=chr, pos_min=pos_min, pos_max=pos_max)
-    except Exception as e:
-        await log_request(db, "/alleles", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 500)
-        raise HTTPException(status_code=500, detail=str(e))
-    await log_request(db, "/alleles", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 200)
-    return results

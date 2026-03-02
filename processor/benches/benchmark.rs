@@ -24,10 +24,20 @@ fn benchmark_vcf_parsing(c: &mut Criterion) {
     });
 }
 
+fn benchmark_anonymization(c: &mut Criterion) {
+    let id = "PATIENT_001_SENSITIVE_ID";
+
+    c.bench_function("anonymize_id_blake3", |b| {
+        b.iter(|| {
+            processor::anonymize::hash_id(black_box(id));
+        })
+    });
+}
+
 // We lower the sample_size because parsing 100k variants 100 times takes too long for a quick benchmark
 criterion_group! {
     name = benches;
     config = Criterion::default().sample_size(10);
-    targets = benchmark_vcf_parsing
+    targets = benchmark_vcf_parsing, benchmark_anonymization
 }
 criterion_main!(benches);
