@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  rust:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +25,16 @@ jobs:
 
       - name: Run Rust tests
         run: nix develop --command bash -c "cd processor && cargo test"
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
 
       - name: Check Python formatting
         run: nix develop --command bash -c "cd enclave && uv run ruff format --check ."
