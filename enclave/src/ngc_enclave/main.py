@@ -8,7 +8,7 @@ from fastapi import Depends, FastAPI, HTTPException, Security, status
 from fastapi.security import APIKeyHeader
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .audit import Base, log_request
+from .audit import Base, audit_logger, log_request
 from .db import engine, get_db
 from .query import query_allele_frequencies, query_variants
 
@@ -40,6 +40,9 @@ async def verify_api_key(api_key: str = Security(api_key_header)):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Start the background audit worker
+    await audit_logger.start(engine)
+
     # Create DB tables on startup — retries because Postgres may still be initialising
     for attempt in range(10):
         try:

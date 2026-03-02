@@ -29,13 +29,9 @@ def query_variants(
 
     where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
-    # DuckDB reads Parquet directly — no database server needed
+    # DuckDB reads Parquet directly — results are transferred via Arrow for speed
     sql = f"SELECT * FROM read_parquet('{path}') {where_clause}"
-    result = duckdb.query(sql).fetchall()
-    columns = [desc[0] for desc in duckdb.query(sql).description]
-
-    # Convert list of tuples → list of dicts (JSON-serialisable)
-    return [dict(zip(columns, row)) for row in result]
+    return duckdb.query(sql).arrow().to_pylist()
 
 
 @cached(cache=allele_cache)
@@ -71,7 +67,4 @@ def query_allele_frequencies(
         LIMIT 100
     """
 
-    result = duckdb.query(sql).fetchall()
-    columns = [desc[0] for desc in duckdb.query(sql).description]
-
-    return [dict(zip(columns, row)) for row in result]
+    return duckdb.query(sql).arrow().to_pylist()

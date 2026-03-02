@@ -1,0 +1,89 @@
+figure out how to push all these current changes
+
+Populate the database with data
+rename vcf_benchmark.rs safely
+add config files
+add more testing? code coverage?
+add some kind of machine learning feature?
+add system monitoring?
+add distributed data loading?
+
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Rust Processor
+  rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: processor
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            processor/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('processor/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Check formatting
+        run: cargo fmt --check
+
+      - name: Lint (Clippy)
+        run: cargo clippy -- -D warnings
+
+      - name: Run tests
+        run: cargo test
+
+  # Python Enclave
+  python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: enclave
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Lint (Ruff)
+        run: uv run ruff check .
+
+      - name: Format check (Ruff)
+        run: uv run ruff format --check .
+
+      - name: Run tests
+        # Exit code 5 = no tests collected (acceptable on infra-only branches)
+        # The || pattern is safe under set -e: $? in the fallback holds pytest's exit code
+        run: uv run pytest --tb=short || [ $? -eq 5 ]
