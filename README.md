@@ -1,34 +1,121 @@
-todo: add CD, readme, tests, improvements to memory usage, speed etc?
+<div align="center">
 
-1. Rust Processor (Memory & Speed)
-In processor/src/lib.rs, inside the main process_variants loop that parses millions of genomic variants, you have these lines:
+# 🧬 NGC Data Node
 
-rust
-ref_builder.append_value(record.reference_bases().to_string().as_str());
-alt_builder.append_value(alt.to_string().as_str());
-The critique: Calling .to_string() inside a tight loop is a classic performance antipattern. It forces Rust to allocate new memory on the heap for every single variant, copy the string data, and then immediately drop it after appending. On a dataset with 10M+ rows, this will drastically slow down execution and cause massive memory churn. The fix: Avoid heap allocation entirely. The noodles crate usually provides ways to borrow the underlying &str or byte slice directly. You should use something like record.reference_bases().as_ref() (depending on the exact noodles API) so you're just passing a reference to the builder.
+[![Rust](https://img.shields.io/badge/rust-stable-%23E34F26.svg?style=flat-square&logo=rust)](https://www.rust-lang.org/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg?style=flat-square&logo=python)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com)
+[![DuckDB](https://img.shields.io/badge/DuckDB-FFF000?style=flat-square&logo=duckdb)](https://duckdb.org/)
+[![Nix](https://img.shields.io/badge/Nix-Reproducible-5277C3.svg?style=flat-square&logo=Nixos)](https://nixos.org/)
 
-Capacity Pre-allocation: Currently, the string builders (StringBuilder::with_capacity(capacity, capacity * 2)) use a hardcoded capacity of 100_000. If you process millions of rows, the underlying vectors will constantly resize, moving data around in memory. If you can't know the exact row count in advance, this is mostly fine, but an interviewer might ask about it.
+**High-Performance, Secure Infrastructure for Genomic Variant Data**
 
-2. Python Enclave (RAM & Scalability)
-In query.py, you are caching the results of DuckDB queries:
+NGC Data Node is a specialized, dual-engine data platform designed to process, store, and fiercely protect genomic variant information at scale. By combining the zero-copy memory safety of **Rust** with the analytical power of **DuckDB** and a **FastAPI** secure enclave, the node provides researchers with rapid, audited data access.
 
-python
-variant_cache = TTLCache(maxsize=128, ttl=60)
-@cached(cache=variant_cache)
-def query_variants(...):
-    # ...
-    result = duckdb.query(sql).fetchall()
-    # Convert list of tuples → list of dicts
-    return [dict(zip(columns, row)) for row in result]
-The critique: fetchall() eagerly loads the entire result set into Python's memory as a list of tuples. Then, you duplicate that data by converting it into a list of dictionaries, and then you store it in the cache. Genomic queries can return huge datasets (millions of rows). If multiple users hit this endpoint concurrently, your Python process will quickly suffer from memory bloat and could crash with an Out of Memory (OOM) error. The fix:
+</div>
 
-Implement Pagination: Always use LIMIT and OFFSET (or cursor-based pagination) on your endpoints so queries return a predictable, safe amount of data per request (e.g., 1000 rows max).
-Use Arrow: DuckDB integrates perfectly with Apache Arrow (duckdb.query().arrow()). Arrow is a zero-copy memory format, which means you can pass the data off to FastAPI directly without creating lists of Python dictionaries, saving massive amounts of RAM and CPU cycles.
-3. Regarding leaks <PID> (Applicability)
-Yes, using leaks <PID> on macOS is highly relevant and an excellent talking point for your interview!
+---
 
-Because your core processor is written in Rust, which compiles to native binaries without a garbage collector, memory profiling tools like leaks, Instruments (macOS), or valgrind/heaptrack (Linux) are the standard way to verify that your program isn't leaking memory or bloating unnecessarily.
-While Rust's borrow checker prevents most traditional memory leaks (like forgetting to free() in C), you can still cause "memory bloat" (holding onto memory for too long) or leak data via reference cycles (Rc/Arc).
-If the interviewer asks how you validate the memory footprint of your Rust pipeline, stating that you use leaks <PID> to profile the live process while it parses a heavy VCF file shows incredible maturity in systems engineering.
-Overall, the architecture is extremely solid, and addressing these memory allocations in both Rust and Python are exactly the "under-the-hood" details a technical interviewer will love to see you discuss or optimize!
+## ✨ Features
+
+- **Zero-Copy Parsing:** A custom Rust parser ingests `.VCF` files, writing directly to Apache Parquet without unnecessary heap allocations.
+- **Microsecond Analysis:** DuckDB scans Parquet files and transfers aggregates into Python memory via Apache Arrow, achieving ~4ms response times.
+- **Secure Enclave:** API access is gatekept with API keys and an immutable Postgres audit log.
+- **Reproducible Environment:** fully isolated dependency management driven by a `flake.nix` configuration.
+- **Developer DX:** The `ngc` CLI utility manages the entire stack from code to deployment.
+
+---
+
+## 🛠️ Developer Environment (Nix)
+
+The easiest and most reliable way to work on this project is by using the provided **Nix Flake**, which sets up a fully reproducible development environment and a custom helper CLI.
+
+### 1. Enter the Environment
+```bash
+nix develop
+```
+
+### 2. The `ngc` Developer CLI
+While inside the Nix shell, the `ngc` command exposes powerful lifecycle hooks:
+
+| Command | Description |
+| :--- | :--- |
+| `ngc demo` | **The "Easy Button"**: Runs setup, starts DB, generates data, processes VCF to Parquet, and starts the API. |
+| `ngc setup` | Syncs Python dependencies via `uv`. |
+| `ngc db-up` / `db-down` | Lifecycle management for the PostgreSQL Docker container. |
+| `ngc generate` | Creates a synthetic 100k variant VCF testing file. |
+| `ngc run` | Compiles and runs the Rust Processor against the VCF data. |
+| `ngc serve` | Starts the FastAPI server and opens the SWAGGER documentation. |
+| `ngc test` | Runs the full test suite (Rust unit tests + Python PyTest). |
+| `ngc locust` | Triggers the Locust Load Testing tool for performance analysis. |
+| `ngc help` | Shows all available developer commands. |
+
+---
+
+## 🚀 Native Workflows (Without Nix)
+
+If you are not using Nix, ensure you have the `cargo` toolchain, `uv` for Python 3.11+, and `docker-compose` installed.
+
+### 1. Setup & Ingest Data
+```bash
+# Start Metadatabase
+docker-compose up -d
+
+# Generate Synthetic Data
+python scripts/generate_vcf.py
+
+# Parse and Optimize to Parquet
+cd processor && cargo run --release -- ../data/synthetic_100k.vcf ../data/output.parquet
+```
+
+### 2. Run the Secure API
+```bash
+cd enclave
+uv sync
+uv run uvicorn ngc_enclave.main:app --reload
+```
+
+---
+
+## 🏗️ System Architecture
+
+Our hybrid architecture isolates the heavy "Extract, Transform, Load" (ETL) workload into a highly optimized systems language (Rust), while exposing the flexible query API via Python.
+
+** DIAGRAM HERE **
+---
+
+## 🏎️ Performance & Scalability
+
+Our system is rigorously stress-tested at two levels: the low-level data ingestion engine (Rust) and the high-level API enclave (Python).
+
+**Data Ingestion Benchmarks (Rust/Criterion):**
+- **Micro: BLAKE3 Crypto Hash:** `~130 ns` per sample ID.
+- **Micro: VCF String Parsing:** `~12.8 ms` to parse raw strings.
+- **Macro: Parse 100k Variants:** `~20.2 ms` total execution time for the full 100,000 variant ingestion pipeline.
+
+**API Load Testing (Python/FastAPI):**
+- **Avg. Response Time:** `~4ms` for a local 100,000 variant dataset.
+- **Memory Footprint:** Controlled memory bloat via strictly paginated payloads and PyArrow zero-copy transfer.
+- **Estimated Scaling:** `~150-250ms` for multi-million variant datasets under heavy concurrent load.
+
+*(Run `ngc bench` to replicate the Rust data pipeline benchmarks, or `ngc locust` for API load testing).*
+
+---
+
+## 📸 Evidence
+
+Here are the latest runtime measurements from our local test environment:
+
+### Python Enclave (Locust API Load Test)
+![Locust Load Test Charts](assets/screenshot2.jpg)
+
+![Locust Load Test Statistics](assets/screenshot3.jpg)
+
+### Rust Processor (Criterion Benchmarks)
+![Rust Criterion Benchmarks](assets/screenshot1.jpg)
+
+---
+
+<div align="center">
+    <i>Built for speed. Secured by design.</i>
+</div>
