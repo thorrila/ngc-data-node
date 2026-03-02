@@ -3,9 +3,7 @@ import random
 
 
 class NGCLoadTestUser(HttpUser):
-    # Base URL is expected to be http://127.0.0.1:8000
-
-    # Wait time between requests for each user (simulates think time)
+    host = "http://127.0.0.1:8000"
     wait_time = between(0.1, 0.5)
 
     @task(3)
@@ -16,7 +14,7 @@ class NGCLoadTestUser(HttpUser):
         chr_query = random.choice(chromosomes)
 
         # Secure API Header
-        headers = {"Authorization": "Bearer ngc-secret-admin-token"}
+        headers = {"Authorization": "Bearer ngc"}
 
         # Give the request a name in locust so they group cleanly by endpoint, not unique URL
         self.client.get(
@@ -26,7 +24,7 @@ class NGCLoadTestUser(HttpUser):
     @task(1)
     def query_dataset_list(self):
         """Simulate a user checking available datasets"""
-        headers = {"Authorization": "Bearer ngc-secret-admin-token"}
+        headers = {"Authorization": "Bearer ngc"}
         self.client.get("/datasets", headers=headers)
 
     @task(1)
