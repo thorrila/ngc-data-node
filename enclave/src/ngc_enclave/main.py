@@ -76,7 +76,6 @@ async def health():
 
 @app.get("/variants")
 async def get_variants(
-    db: Annotated[AsyncSession, Depends(get_db)],
     api_key: Annotated[str, Depends(verify_api_key)],
     chr: str | None = None,
     pos_min: int | None = None,
@@ -86,10 +85,10 @@ async def get_variants(
     try:
         results = query_variants(PARQUET_PATH, chrom=chr, pos_min=pos_min, pos_max=pos_max)
     except Exception as e:
-        await log_request(db, "/variants", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 500)
+        await log_request(None, "/variants", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 500)
         raise HTTPException(status_code=500, detail=str(e))
 
-    await log_request(db, "/variants", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 200)
+    await log_request(None, "/variants", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 200)
     return results
 
 
@@ -109,7 +108,6 @@ async def list_datasets(
 
 @app.get("/alleles")
 async def get_alleles_frequencies(
-    db: Annotated[AsyncSession, Depends(get_db)],
     api_key: Annotated[str, Depends(verify_api_key)],
     chr: str | None = None,
     pos_min: int | None = None,
@@ -119,7 +117,7 @@ async def get_alleles_frequencies(
     try:
         results = query_allele_frequencies(PARQUET_PATH, chrom=chr, pos_min=pos_min, pos_max=pos_max)
     except Exception as e:
-        await log_request(db, "/alleles", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 500)
+        await log_request(None, "/alleles", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 500)
         raise HTTPException(status_code=500, detail=str(e))
-    await log_request(db, "/alleles", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 200)
+    await log_request(None, "/alleles", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 200)
     return results
