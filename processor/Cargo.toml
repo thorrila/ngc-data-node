@@ -21,7 +21,7 @@ anyhow = "1.0.70"
 criterion = "0.5"
 
 [[bench]]
-name = "vcf_benchmark"
+name = "benchmark"
 harness = false
 
 [profile.bench]
