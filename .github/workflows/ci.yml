@@ -7,64 +7,30 @@ on:
     branches: [main]
 
 jobs:
-  # Rust Processor
-  rust:
+  test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: processor
-
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
         with:
-          components: clippy, rustfmt
+          nix_path: nixpkgs=channel:nixos-unstable
 
-      - name: Cache Cargo registry
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            processor/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('processor/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+      - name: Check Rust formatting
+        run: nix develop --command bash -c "cd processor && cargo fmt --check"
 
-      - name: Check formatting
-        run: cargo fmt --check
+      - name: Rust Lint (Clippy)
+        run: nix develop --command bash -c "cd processor && cargo clippy -- -D warnings"
 
-      - name: Lint (Clippy)
-        run: cargo clippy -- -D warnings
+      - name: Run Rust tests
+        run: nix develop --command bash -c "cd processor && cargo test"
 
-      - name: Run tests
-        run: cargo test
+      - name: Check Python formatting
+        run: nix develop --command bash -c "cd enclave && uv run ruff format --check ."
 
-  # Python Enclave
-  python:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: enclave
+      - name: Python Lint (Ruff)
+        run: nix develop --command bash -c "cd enclave && uv run ruff check ."
 
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-
-      - name: Install dependencies
-        run: uv sync
-
-      - name: Lint (Ruff)
-        run: uv run ruff check .
-
-      - name: Format check (Ruff)
-        run: uv run ruff format --check .
-
-      - name: Run tests
-        # Exit code 5 = no tests collected (acceptable on infra-only branches)
-        # The || pattern is safe under set -e: $? in the fallback holds pytest's exit code
-        run: uv run pytest --tb=short || [ $? -eq 5 ]
+      - name: Run Python tests
+        run: nix develop --command bash -c "cd enclave && uv run pytest"
