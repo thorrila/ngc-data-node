@@ -12,8 +12,6 @@
                 pkgs = nixpkgs.legacyPackages.${system};
             in
             {
-<<<<<<< Updated upstream
-=======
                 packages.default = pkgs.rustPlatform.buildRustPackage {
                     pname = "ngc-processor";
                     version = "0.1.0";
@@ -29,7 +27,6 @@
                     program = "${self.packages.${system}.default}/bin/processor";
                 };
 
->>>>>>> Stashed changes
                 devShells.default = pkgs.mkShell {
                     packages = with pkgs; [
                         # Version control
@@ -62,30 +59,7 @@
                         # If $1 is empty (-z), "help", "-help", or "--help"
                         if [ -z "$1" ] || [ "$1" = "help" ] || [ "$1" = "-help" ] || [ "$1" = "--help" ];
                         then
-                            echo "------------------------------------------------------"
-                            echo "Commands:"
-<<<<<<< Updated upstream
-                            echo "ngc go                      - 0. Runs the full demo pipeline"
-                            echo "ngc setup                   - 1. Installs Python Enclave dependencies"
-                            echo "ngc hooks                   - 2. Installs pre-commit Git hooks"
-                            echo "ngc db-up                   - 3. Spins up PostgreSQL database in Docker"
-                            echo "ngc db-down                 - 4. Tears down PostgreSQL database"
-                            echo "ngc generate                - 5. Generates synthetic VCF data"
-                            echo "ngc run                     - 6. Converts raw VCFs to Parquet using Rust"
-                            echo "ngc serve                   - 7. Starts FastAPI secure enclave on localhost"
-                            echo "ngc test                    - 8. Runs Rust unit tests and Python API integration tests"
-                            echo "ngc locust                  - 9. Runs Locust API load tests"
-                            echo "ngc logs                    - 10. View API access logs from PostgreSQL"
-                            echo "ngc query <sql>             - 11. Run a custom SQL query on PostgreSQL"
-                            echo "ngc build                   - 12. Compiles Rust Engine for production"
-                            echo "ngc deploy                  - 13. Deploys Infrastructure using Ansible"
-                            echo "ngc lint                    - 14. Runs code quality checks"
-                            echo "ngc format                  - 15. Auto-formats Rust and Python code"
-                            echo "ngc polish                  - 16. Format, Lint, and Test in one go"
-                            echo "ngc bench                   - 17. Runs Criterion benchmarks on the Rust Processor"
-                            echo "ngc profile                 - 18. Runs Samply to generate a CPU flamegraph"
-                            echo "ngc clean                   - 19. Cleans data and cache files"                            echo "------------------------------------------------------"
-=======
+                            echo "------------------------------------------------------"                            echo "Commands:"
                             echo "ngc demo                    - 0. runs the full pipeline"
                             echo "ngc setup                   - 1. python dependencies"
                             echo "ngc hooks                   - 2. pre-commit hooks"
@@ -107,7 +81,6 @@
                             echo "ngc query <sql>             - 18. custom SQL"
                             echo "ngc clean                   - 19. clean artifacts"
                             echo "------------------------------------------------------"
->>>>>>> Stashed changes
 
                         elif [ "$1" = "run" ]; then
                             # Default values if no arguments are provided
@@ -185,13 +158,8 @@
                             fi
 
                         elif [ "$1" = "deploy" ]; then
-<<<<<<< Updated upstream
-                            echo "Deploying Infrastructure with Ansible..."
-                            ansible-playbook deploy.yml
-=======
                             echo "Deploying NGC Data Node..."
                             ansible-playbook "$NGC_ROOT/infra/ansible/playbook.yml"
->>>>>>> Stashed changes
 
                         elif [ "$1" = "db-down" ]; then
                             echo "Stopping PostgreSQL Database..."
@@ -221,8 +189,8 @@
                             echo "Starting Locust API Load Tester..."
                             (cd "$NGC_ROOT/enclave" && uv run locust -f ../scripts/locustfile.py)
 
-                        elif [ "$1" = "go" ]; then
-                            echo "🚀 Setting off on the full NGC lifecycle demo..."
+                        elif [ "$1" = "demo" ]; then
+                            echo "Setting off on the full NGC lifecycle demo..."
                             ngc setup
                             ngc db-up
                             ngc generate
@@ -238,7 +206,7 @@
                     echo "$(python3 --version)"
                     echo "$(ruff --version)"
                     echo "$(cargo --version | cut -d' ' -f1-2)"
-                    echo "Type 'ngc go' to run the full demo pipeline."
+                    echo "Type 'ngc demo' to run the full demo pipeline."
                     echo "Type 'ngc' to see a list of commands."
                     echo "Type 'exit' to leave this isolated environment."
                     echo "------------------------------------------------------"
