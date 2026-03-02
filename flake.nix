@@ -12,6 +12,24 @@
                 pkgs = nixpkgs.legacyPackages.${system};
             in
             {
+<<<<<<< Updated upstream
+=======
+                packages.default = pkgs.rustPlatform.buildRustPackage {
+                    pname = "ngc-processor";
+                    version = "0.1.0";
+                    src = ./processor;
+                    cargoLock.lockFile = ./processor/Cargo.lock;
+
+                    # Ensure iconv is available for Darwin builds (samply/flamegraph)
+                    buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.libiconv ];
+                };
+
+                apps.default = {
+                    type = "app";
+                    program = "${self.packages.${system}.default}/bin/processor";
+                };
+
+>>>>>>> Stashed changes
                 devShells.default = pkgs.mkShell {
                     packages = with pkgs; [
                         # Version control
@@ -46,6 +64,7 @@
                         then
                             echo "------------------------------------------------------"
                             echo "Commands:"
+<<<<<<< Updated upstream
                             echo "ngc go                      - 0. Runs the full demo pipeline"
                             echo "ngc setup                   - 1. Installs Python Enclave dependencies"
                             echo "ngc hooks                   - 2. Installs pre-commit Git hooks"
@@ -66,6 +85,29 @@
                             echo "ngc bench                   - 17. Runs Criterion benchmarks on the Rust Processor"
                             echo "ngc profile                 - 18. Runs Samply to generate a CPU flamegraph"
                             echo "ngc clean                   - 19. Cleans data and cache files"                            echo "------------------------------------------------------"
+=======
+                            echo "ngc demo                    - 0. runs the full pipeline"
+                            echo "ngc setup                   - 1. python dependencies"
+                            echo "ngc hooks                   - 2. pre-commit hooks"
+                            echo "ngc db-up                   - 3. start database"
+                            echo "ngc generate                - 4. generate VCF data"
+                            echo "ngc run                     - 5. process VCF → Parquet"
+                            echo "ngc serve                   - 6. start API"
+                            echo "ngc deploy                  - 7. provision with Ansible"
+                            echo "ngc db-down                 - 8. stop database"
+                            echo "ngc test                    - 9. run tests (rust + python)"
+                            echo "ngc polish                  - 10. format + lint + test in one go"
+                            echo "ngc lint                    - 11. code quality checks"
+                            echo "ngc format                  - 12. auto-format"
+                            echo "ngc build                   - 13. compile release binary"
+                            echo "ngc bench                   - 14. benchmarks"
+                            echo "ngc profile                 - 15. CPU flamegraph"
+                            echo "ngc locust                  - 16. load tests"
+                            echo "ngc logs                    - 17. view audit logs"
+                            echo "ngc query <sql>             - 18. custom SQL"
+                            echo "ngc clean                   - 19. clean artifacts"
+                            echo "------------------------------------------------------"
+>>>>>>> Stashed changes
 
                         elif [ "$1" = "run" ]; then
                             # Default values if no arguments are provided
@@ -143,8 +185,13 @@
                             fi
 
                         elif [ "$1" = "deploy" ]; then
+<<<<<<< Updated upstream
                             echo "Deploying Infrastructure with Ansible..."
                             ansible-playbook deploy.yml
+=======
+                            echo "Deploying NGC Data Node..."
+                            ansible-playbook "$NGC_ROOT/infra/ansible/playbook.yml"
+>>>>>>> Stashed changes
 
                         elif [ "$1" = "db-down" ]; then
                             echo "Stopping PostgreSQL Database..."
