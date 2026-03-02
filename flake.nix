@@ -210,6 +210,11 @@
                     echo "Type 'ngc' to see a list of commands."
                     echo "Type 'exit' to leave this isolated environment."
                     echo "------------------------------------------------------"
+
+                    # Fix for Python wheels (like duckdb) that need libstdc++.so.6 on Linux
+                    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+                        export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH"
+                    fi
                 '';
                 };
             }
