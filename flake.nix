@@ -17,7 +17,7 @@
                     version = "0.1.0";
                     src = ./processor;
                     cargoLock.lockFile = ./processor/Cargo.lock;
-                    
+
                     # Ensure iconv is available for Darwin builds (samply/flamegraph)
                     buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.libiconv ];
                 };
@@ -80,7 +80,7 @@
                             echo "ngc locust                  - 16. load tests"
                             echo "ngc logs                    - 17. view audit logs"
                             echo "ngc query <sql>             - 18. custom SQL"
-                            echo "ngc clean                   - 19. clean artifacts"                            
+                            echo "ngc clean                   - 19. clean artifacts"
                             echo "------------------------------------------------------"
 
                         elif [ "$1" = "run" ]; then
@@ -160,20 +160,20 @@
 
                         elif [ "$1" = "deploy" ]; then
                             echo "Deploying NGC Data Node..."
-                            ansible-playbook "$NGC_ROOT/infra/ansible/playbook.yml"     
+                            ansible-playbook "$NGC_ROOT/infra/ansible/playbook.yml"
 
                         elif [ "$1" = "db-down" ]; then
                             echo "Stopping PostgreSQL Database..."
                             docker compose -f "$NGC_ROOT/docker-compose.yml" down
 
                         elif [ "$1" = "clean" ]; then
-                            echo "Cleaning up artifacts and caches..."
+                            echo "🧹 Cleaning up project artifacts and caches..."
                             find "$NGC_ROOT" -name "__pycache__" -type d -exec rm -rf {} +
                             find "$NGC_ROOT" -name ".pytest_cache" -type d -exec rm -rf {} +
                             find "$NGC_ROOT" -name ".ruff_cache" -type d -exec rm -rf {} +
                             rm -fv "$NGC_ROOT"/data/*.parquet 2>/dev/null || true
                             rm -fv "$NGC_ROOT"/data/*.vcf 2>/dev/null || true
-                            echo "Project is clean."
+                            echo "✓ Project is clean."
 
                         elif [ "$1" = "generate" ]; then
                             echo "Generating synthetic VCF data..."
