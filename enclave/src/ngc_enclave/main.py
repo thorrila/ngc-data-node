@@ -102,7 +102,9 @@ async def list_datasets(
     """List all ingested datasets from Postgres."""
     from sqlalchemy import text
 
-    result = await db.execute(text("SELECT * FROM datasets ORDER BY ingested_at DESC"))
+    result = await db.execute(
+        text("SELECT id, vcf_filename, parquet_path, record_count, ingested_at FROM datasets ORDER BY ingested_at DESC")
+    )
     rows = result.fetchall()
     await log_request(db, "/datasets", {}, 200)
     return [dict(row._mapping) for row in rows]

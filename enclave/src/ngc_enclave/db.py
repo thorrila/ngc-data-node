@@ -4,8 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 # Read DATABASE_URL environment variable, falls back to local Docker default
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://ngc:ngc@localhost:5433/ngc")
-# Connection pool
-engine = create_async_engine(DATABASE_URL)
+# Connection pool — sized for moderate concurrent load.
+# pool_size: persistent connections kept alive.
+# max_overflow: extra connections allowed under burst traffic.
+engine = create_async_engine(DATABASE_URL, pool_size=5, max_overflow=10, pool_timeout=30)
 # Session factory
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 

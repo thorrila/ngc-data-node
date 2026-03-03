@@ -43,8 +43,8 @@ fn benchmark_vcf_parsing_micro(c: &mut Criterion) {
     });
 }
 
-// 3. Micrometrics: Benchmarks purely the Rust math speed of the Blake3 hashing algorithm.
-// This proves how fast our post-quantum anonymization scales per variant.
+// 3. Micrometrics: Benchmarks purely the Rust math speed of the BLAKE3 hashing algorithm.
+// BLAKE3 is a fast, cryptographically secure hash — used here to pseudonymise sample IDs.
 fn benchmark_blake3_micro(c: &mut Criterion) {
     c.bench_function("micro_blake3_crypto_hash", |b| {
         b.iter(|| {

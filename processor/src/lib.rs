@@ -1,5 +1,4 @@
 pub mod anonymize;
-pub mod parquet;
 
 // Alias the parquet *crate* so it doesn't conflict with our local `parquet` module.
 use ::parquet::arrow::arrow_writer::ArrowWriter;
