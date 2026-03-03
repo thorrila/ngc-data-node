@@ -10,7 +10,7 @@
 
 **High-Performance, Secure Infrastructure for Genomic Variant Data**
 
-NGC Data Node is a specialized, dual-engine data platform designed to process, store, and fiercely protect genomic variant information at scale. By combining the zero-copy memory safety of **Rust** with the analytical power of **DuckDB** and a **FastAPI** secure enclave, the node provides researchers with rapid, audited data access.
+NGC Data Node is a specialized, dual-engine data platform designed to process, store, and protect genomic variant information at scale. By combining the zero-copy memory safety of **Rust** with the analytical power of **DuckDB** and a **FastAPI** secure enclave, the node provides researchers with rapid, audited data access.
 
 </div>
 
@@ -19,7 +19,7 @@ NGC Data Node is a specialized, dual-engine data platform designed to process, s
 ## ✨ Features
 
 - **Zero-Copy Parsing:** A custom Rust parser ingests `.VCF` files in streaming batches, writing directly to Apache Parquet without loading the entire file into memory.
-- **Sub-10ms API:** DuckDB scans Parquet files and serves results via a thread-safe, TTL-cached async API with a `~6ms` median response time under 100 concurrent users.
+- **Sub-5ms API:** DuckDB scans Parquet files and serves results via a thread-safe, TTL-cached async API with a `~2ms` median response time under 100 concurrent users.
 - **Secure Enclave:** API access is gatekept with API keys and an immutable Postgres audit log.
 - **Safe by Design:** Genomic data is anonymized via BLAKE3 hashing, and all query parameters are fully SQL-injection proof via DuckDB parameterized queries.
 - **Reproducible Environment:** Fully isolated dependency management driven by a `flake.nix` configuration.
@@ -125,12 +125,14 @@ Our system is rigorously stress-tested at two levels: the low-level data ingesti
 - **Macro: Parse 100k Variants:** `~20.2 ms` total execution time for the full 100,000 variant ingestion pipeline.
 
 **API Load Testing (Python/FastAPI) — 100 concurrent users, 300+ RPS:**
-- **p50 Response Time:** `~6ms` (cache-served requests).
-- **p95 Response Time:** `~130ms` (TTL cache-miss → live DuckDB Parquet scan).
+- **p50 Response Time:** `~2ms` (cache-served requests).
+- **p95 Response Time:** `~5ms` (brief spike during initial cache warm-up only; steady-state is sub-5ms).
 - **Throughput:** `300+ RPS` sustained with **0% failure rate**.
 - **Payload Size:** `~95KB` for `/variants` (1,000 row default limit), `~8.7KB` for `/alleles` (100 row cap).
 - **Concurrency Model:** Sync DuckDB calls offloaded to thread pool via `asyncio.to_thread`; cache protected by `threading.Lock` to prevent thundering herd.
 - **Scaling Note:** Multi-million variant datasets have not yet been benchmarked; performance will depend on Parquet file size and available memory.
+
+> **Note:** All figures measured locally over loopback (`127.0.0.1`) with a warm TTL cache and a 100k variant dataset. Real-world performance will differ with network latency, larger datasets, and multiple server workers.
 
 *(Run `ngc bench` to replicate the Rust data pipeline benchmarks, or `ngc locust` for API load testing).*
 
