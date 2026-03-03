@@ -132,6 +132,8 @@ Our system is rigorously stress-tested at two levels: the low-level data ingesti
 - **Concurrency Model:** Sync DuckDB calls offloaded to thread pool via `asyncio.to_thread`; cache protected by `threading.Lock` to prevent thundering herd.
 - **Scaling Note:** Multi-million variant datasets have not yet been benchmarked; performance will depend on Parquet file size and available memory.
 
+> **Note:** All figures measured locally over loopback (`127.0.0.1`) with a warm TTL cache and a 100k variant dataset. Real-world performance will differ with network latency, larger datasets, and multiple server workers.
+
 *(Run `ngc bench` to replicate the Rust data pipeline benchmarks, or `ngc locust` for API load testing).*
 
 ---
