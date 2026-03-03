@@ -18,10 +18,11 @@ NGC Data Node is a specialized, dual-engine data platform designed to process, s
 
 ## ✨ Features
 
-- **Zero-Copy Parsing:** A custom Rust parser ingests `.VCF` files, writing directly to Apache Parquet without unnecessary heap allocations.
-- **Microsecond Analysis:** DuckDB scans Parquet files and transfers aggregates into Python memory via Apache Arrow, achieving ~4ms response times.
+- **Zero-Copy Parsing:** A custom Rust parser ingests `.VCF` files in streaming batches, writing directly to Apache Parquet without loading the entire file into memory.
+- **Sub-10ms API:** DuckDB scans Parquet files and serves results via a thread-safe, TTL-cached async API with a `~6ms` median response time under 100 concurrent users.
 - **Secure Enclave:** API access is gatekept with API keys and an immutable Postgres audit log.
-- **Reproducible Environment:** fully isolated dependency management driven by a `flake.nix` configuration.
+- **Safe by Design:** Genomic data is anonymized via BLAKE3 hashing, and all query parameters are fully SQL-injection proof via DuckDB parameterized queries.
+- **Reproducible Environment:** Fully isolated dependency management driven by a `flake.nix` configuration.
 - **Developer DX:** The `ngc` CLI utility manages the entire stack from code to deployment.
 
 ---
@@ -61,11 +62,14 @@ If you are not using Nix, ensure you have the `cargo` toolchain, `uv` for Python
 # Start Metadatabase
 docker-compose up -d
 
+# Set your API key (or use the default 'ngc' for local development only)
+export NGC_API_KEY=your-secret-key
+
 # Generate Synthetic Data
 python scripts/generate_vcf.py
 
-# Parse and Optimize to Parquet
-cd processor && cargo run --release -- ../data/synthetic_100k.vcf ../data/output.parquet
+# Parse and Optimize to Parquet (streaming — constant memory usage)
+cd processor && cargo run --release -- --input ../data/synthetic_100k.vcf --output ../data/output.parquet
 ```
 
 ### 2. Run the Secure API
@@ -81,7 +85,34 @@ uv run uvicorn ngc_enclave.main:app --reload
 
 Our hybrid architecture isolates the heavy "Extract, Transform, Load" (ETL) workload into a highly optimized systems language (Rust), while exposing the flexible query API via Python.
 
-** DIAGRAM HERE **
+*Architecture diagram — see Evidence section below.*
+
+---
+
+## 🔌 API Endpoints
+
+All endpoints (except `/health`) require an `Authorization: Bearer <key>` header. The default key is set by the `NGC_API_KEY` environment variable.
+
+| Method | Endpoint | Description |
+| :----- | :------- | :---------- |
+| `GET` | `/health` | Liveness check. Returns `{"status": "ok"}`. No auth required. |
+| `GET` | `/variants` | Query genomic variants from Parquet. Params: `chr`, `pos_min`, `pos_max`, `limit` (default `1000`, max `5000`). |
+| `GET` | `/alleles` | Compute allele frequencies grouped by variant signature. Params: `chr`, `pos_min`, `pos_max`. Returns top 100 results. |
+| `GET` | `/datasets` | List datasets registered in Postgres. Populated when an ingest pipeline writes metadata after processing. |
+
+**Example Requests:**
+```bash
+# All variants on chromosome 1 between positions 100 and 500
+curl -H "Authorization: Bearer ngc" \
+  "http://localhost:8000/variants?chr=1&pos_min=100&pos_max=500&limit=50"
+
+# Allele frequencies for chromosome X
+curl -H "Authorization: Bearer ngc" \
+  "http://localhost:8000/alleles?chr=X"
+```
+
+Interactive API documentation (Swagger UI) is auto-generated at `http://localhost:8000/docs` when the server is running.
+
 ---
 
 ## 🏎️ Performance & Scalability
@@ -93,10 +124,13 @@ Our system is rigorously stress-tested at two levels: the low-level data ingesti
 - **Micro: VCF String Parsing:** `~12.8 ms` to parse raw strings.
 - **Macro: Parse 100k Variants:** `~20.2 ms` total execution time for the full 100,000 variant ingestion pipeline.
 
-**API Load Testing (Python/FastAPI):**
-- **Avg. Response Time:** `~4ms` for a local 100,000 variant dataset.
-- **Memory Footprint:** Controlled memory bloat via strictly paginated payloads and PyArrow zero-copy transfer.
-- **Estimated Scaling:** `~150-250ms` for multi-million variant datasets under heavy concurrent load.
+**API Load Testing (Python/FastAPI) — 100 concurrent users, 300+ RPS:**
+- **p50 Response Time:** `~6ms` (cache-served requests).
+- **p95 Response Time:** `~130ms` (TTL cache-miss → live DuckDB Parquet scan).
+- **Throughput:** `300+ RPS` sustained with **0% failure rate**.
+- **Payload Size:** `~95KB` for `/variants` (1,000 row default limit), `~8.7KB` for `/alleles` (100 row cap).
+- **Concurrency Model:** Sync DuckDB calls offloaded to thread pool via `asyncio.to_thread`; cache protected by `threading.Lock` to prevent thundering herd.
+- **Scaling Note:** Multi-million variant datasets have not yet been benchmarked; performance will depend on Parquet file size and available memory.
 
 *(Run `ngc bench` to replicate the Rust data pipeline benchmarks, or `ngc locust` for API load testing).*
 
@@ -107,12 +141,12 @@ Our system is rigorously stress-tested at two levels: the low-level data ingesti
 Here are the latest runtime measurements from our local test environment:
 
 ### Python Enclave (Locust API Load Test)
-![Locust Load Test Charts](assets/screenshot2.jpg)
+![Locust Load Test Charts](assets/screenshot1.jpg)
 
-![Locust Load Test Statistics](assets/screenshot3.jpg)
+![Locust Load Test Statistics](assets/screenshot2.jpg)
 
 ### Rust Processor (Criterion Benchmarks)
-![Rust Criterion Benchmarks](assets/screenshot1.jpg)
+![Rust Criterion Benchmarks](assets/screenshot3.jpg)
 
 ---
 
