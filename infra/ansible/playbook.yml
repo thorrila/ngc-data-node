@@ -27,11 +27,10 @@
 
     - name: Wait for PostgreSQL to be healthy
       command: >
-        docker inspect
-        --format='{{ "{{" }}.State.Health.Status{{ "}}" }}'
-        ngc-data-node-postgres-1
+        docker compose -f "{{ compose_file }}" exec -T postgres
+        pg_isready -U ngc -d ngc
       register: pg_health
-      until: pg_health.stdout | trim == "healthy"
+      until: pg_health.rc == 0
       retries: 12
       delay: 5
       changed_when: false
