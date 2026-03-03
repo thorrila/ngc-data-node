@@ -138,7 +138,7 @@
                             echo "Running Tests..."
                             echo "1. Testing Rust Engine..."
                             (cd "$NGC_ROOT/processor" && cargo test)
-                            echo "2. Testing Python API..."
+                            echo "2. Testing Python API and queries..."
                             (cd "$NGC_ROOT/enclave" && uv run pytest)
 
                         elif [ "$1" = "db-up" ]; then
