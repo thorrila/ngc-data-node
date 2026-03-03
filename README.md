@@ -47,8 +47,15 @@ While inside the Nix shell, the `ngc` command exposes powerful lifecycle hooks:
 | `ngc generate` | Creates a synthetic 100k variant VCF testing file. |
 | `ngc run` | Compiles and runs the Rust Processor against the VCF data. |
 | `ngc serve` | Starts the FastAPI server and opens the SWAGGER documentation. |
+| `ngc deploy` | Deploys the application |
+| `ngc bench` | Runs Rust benchmarks to measure performance. |
+| `ngc profile` | Generates a CPU flamegraph to identify performance bottlenecks. |
 | `ngc test` | Runs the full test suite (Rust unit tests + Python PyTest). |
 | `ngc locust` | Triggers the Locust Load Testing tool for performance analysis. |
+| `ngc polish` | Formats, lints and tests in one go |
+| `ngc query <sql>` | Runs a SQL query against the Parquet data. |
+| `ngc logs` | Shows the audit logs of the application. |
+| `ngc clean` | Removes all artifacts and resets the database. |
 | `ngc help` | Shows all available developer commands. |
 
 ---
@@ -117,7 +124,7 @@ Interactive API documentation (Swagger UI) is auto-generated at `http://localhos
 
 ## 🏎️ Performance & Scalability
 
-Our system is rigorously stress-tested at two levels: the low-level data ingestion engine (Rust) and the high-level API enclave (Python).
+Our system is stress-tested at two levels: the low-level data ingestion engine (Rust) and the high-level API enclave (Python).
 
 **Data Ingestion Benchmarks (Rust/Criterion):**
 - **Micro: BLAKE3 Crypto Hash:** `~130 ns` per sample ID.
@@ -138,7 +145,7 @@ Our system is rigorously stress-tested at two levels: the low-level data ingesti
 
 ---
 
-## 📸 Evidence
+## 📸 Screenshots
 
 Here are the latest runtime measurements from our local test environment:
 
