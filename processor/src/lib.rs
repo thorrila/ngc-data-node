@@ -194,10 +194,11 @@ pub fn process_variants<R: std::io::BufRead>(
             id_builder.append_value(".");
         }
 
-        ref_builder.append_value(record.reference_bases().to_string().as_str());
+        // Reference
+        ref_builder.append_value(record.reference_bases());
 
         if let Some(Ok(alt)) = record.alternate_bases().iter().next() {
-            alt_builder.append_value(alt.to_string().as_str());
+            alt_builder.append_value(alt);
         } else {
             alt_builder.append_value(".");
         }
