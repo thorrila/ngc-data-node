@@ -31,3 +31,13 @@ class NGCLoadTestUser(HttpUser):
     def health_check(self):
         """Simulate an infrastructure ping"""
         self.client.get("/health")
+
+    @task(1)
+    def query_allele_frequencies(self):
+        """Simulate a user querying allele frequencies for a random chromosome"""
+        chromosomes = ["1", "2", "3", "X", "Y"]
+        chr_query = random.choice(chromosomes)
+        headers = {"Authorization": "Bearer ngc"}
+        self.client.get(
+            f"/alleles?chr={chr_query}", headers=headers, name="/alleles?chr=[random]"
+        )

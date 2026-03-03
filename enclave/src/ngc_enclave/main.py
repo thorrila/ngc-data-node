@@ -80,10 +80,14 @@ async def get_variants(
     chr: str | None = None,
     pos_min: int | None = None,
     pos_max: int | None = None,
+    limit: int = 1000,
 ) -> list[dict[str, Any]]:
-    """Query genomic variants from Parquet."""
+    """Query genomic variants from Parquet. Default limit is 1000 rows; max is 5000."""
+    limit = min(limit, 5_000)  # hard cap — prevent accidentally fetching the whole dataset
     try:
-        results = query_variants(PARQUET_PATH, chrom=chr, pos_min=pos_min, pos_max=pos_max)
+        results = await asyncio.to_thread(
+            query_variants, PARQUET_PATH, chrom=chr, pos_min=pos_min, pos_max=pos_max, limit=limit
+        )
     except Exception as e:
         await log_request(None, "/variants", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 500)
         raise HTTPException(status_code=500, detail=str(e))
@@ -100,7 +104,9 @@ async def list_datasets(
     """List all ingested datasets from Postgres."""
     from sqlalchemy import text
 
-    result = await db.execute(text("SELECT * FROM datasets ORDER BY ingested_at DESC"))
+    result = await db.execute(
+        text("SELECT id, vcf_filename, parquet_path, record_count, ingested_at FROM datasets ORDER BY ingested_at DESC")
+    )
     rows = result.fetchall()
     await log_request(db, "/datasets", {}, 200)
     return [dict(row._mapping) for row in rows]
@@ -115,7 +121,9 @@ async def get_alleles_frequencies(
 ) -> list[dict[str, Any]]:
     """Query allele frequencies from Parquet."""
     try:
-        results = query_allele_frequencies(PARQUET_PATH, chrom=chr, pos_min=pos_min, pos_max=pos_max)
+        results = await asyncio.to_thread(
+            query_allele_frequencies, PARQUET_PATH, chrom=chr, pos_min=pos_min, pos_max=pos_max
+        )
     except Exception as e:
         await log_request(None, "/alleles", {"chr": chr, "pos_min": pos_min, "pos_max": pos_max}, 500)
         raise HTTPException(status_code=500, detail=str(e))

@@ -26,6 +26,9 @@ jobs:
       - name: Run Rust tests
         run: nix develop --command bash -c "cd processor && cargo test"
 
+      - name: Build Rust release binary
+        run: nix develop --command bash -c "cd processor && cargo build --release"
+
   python:
     runs-on: ubuntu-latest
     steps:

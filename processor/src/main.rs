@@ -1,10 +1,14 @@
 use anyhow::Result;
 use clap::Parser;
 use noodles_vcf as vcf;
-use processor::{parquet, process_variants};
+use processor::stream_variants_to_parquet;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
+
+/// Number of VCF rows buffered in RAM before flushing to the Parquet file.
+/// 10k rows ≈ a few MB — safe even on machines with very limited RAM.
+const BATCH_SIZE: usize = 10_000;
 
 // CLI argument struct — Clap reads --input and --output from the command line
 #[derive(Parser)]
@@ -33,18 +37,11 @@ fn main() -> Result<()> {
     // Read the VCF header (contains sample names, contig definitions, FORMAT/INFO fields)
     let header = reader.read_header()?;
 
-    // Call the newly extracted function
-    let records = process_variants(&mut reader, &header)?;
+    println!("Streaming {:?} → {:?} ...", cli.input, cli.output);
 
-    println!(
-        "Parsed {} variants. Writing to {:?}...",
-        records.num_rows(),
-        cli.output
-    );
+    // Stream variants in fixed-size batches — peak RAM = BATCH_SIZE rows, not the whole file
+    let row_count = stream_variants_to_parquet(&mut reader, &header, &cli.output, BATCH_SIZE)?;
 
-    // Write all records to the Parquet file
-    parquet::write_parquet(&records, &cli.output)?;
-
-    println!("Done.");
+    println!("Done. Wrote {row_count} variants.");
     Ok(())
 }
