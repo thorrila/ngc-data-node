@@ -59,7 +59,8 @@
                         # If $1 is empty (-z), "help", "-help", or "--help"
                         if [ -z "$1" ] || [ "$1" = "help" ] || [ "$1" = "-help" ] || [ "$1" = "--help" ];
                         then
-                            echo "------------------------------------------------------"                            echo "Commands:"
+                            echo "------------------------------------------------------"
+                            echo "Commands:"
                             echo "ngc demo                    - 0. runs the full pipeline"
                             echo "ngc setup                   - 1. python dependencies"
                             echo "ngc hooks                   - 2. pre-commit hooks"
@@ -207,7 +208,7 @@
                     echo "$(ruff --version)"
                     echo "$(cargo --version | cut -d' ' -f1-2)"
                     echo "Type 'ngc demo' to run the full demo pipeline."
-                    echo "Type 'ngc' to see a list of commands."
+                    echo "Type 'ngc help' to see a list of commands."
                     echo "Type 'exit' to leave this isolated environment."
                     echo "------------------------------------------------------"
 
