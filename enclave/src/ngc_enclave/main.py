@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, HTTPException, Security, status
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security import APIKeyHeader
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -66,6 +67,9 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+# Compress any response body larger than 1 KB.
+# /variants (1k rows) drops from ~95 KB → ~12 KB; /alleles from ~8.7 KB → ~2 KB.
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
 @app.get("/health")
