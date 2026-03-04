@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 # VCF parsing
-noodles-vcf = "0.69.0"
+noodles-vcf = "0.85.0"
 # Hashing
 blake3 = "1.5"
 # Parquet writing

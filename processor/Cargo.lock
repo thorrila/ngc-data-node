@@ -737,6 +737,7 @@ checksum = "843fba2746e448b37e26a819579957415c8cef339bf08564fe8b7ddbd959573c"
 dependencies = [
  "crc32fast",
  "miniz_oxide",
+ "zlib-rs",
 ]
 
 [[package]]
@@ -998,11 +999,10 @@ dependencies = [
 
 [[package]]
 name = "noodles-bgzf"
-version = "0.34.0"
+version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e624384981e5847bfd6a026f157c45d687187c30ee21b8c435310267c7aa7ab"
+checksum = "37290f565045fd2775b549e62dffca7e1afadc70d8d5a3a2ef19609eb3d8193b"
 dependencies = [
- "byteorder",
  "bytes",
  "crossbeam-channel",
  "flate2",
@@ -1010,22 +1010,21 @@ dependencies = [
 
 [[package]]
 name = "noodles-core"
-version = "0.15.0"
+version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5a8c6b020d1205abef2b0fab4463a6c5ecc3c8f4d561ca8b0d1a42323376200"
+checksum = "53e1e8a419dbba0e4000b0e60830b124138c7f2277ad556463506f1a81d32d17"
 dependencies = [
  "bstr",
 ]
 
 [[package]]
 name = "noodles-csi"
-version = "0.41.0"
+version = "0.54.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "199113fe53fef2d79b0a9f670d1cad524b4ddcefdc1629dc69f0eb2707212c9e"
+checksum = "348b39ee45de200280706b1152a082f847cd258eed13105441c80b8f6097b489"
 dependencies = [
  "bit-vec",
  "bstr",
- "byteorder",
  "indexmap",
  "noodles-bgzf",
  "noodles-core",
@@ -1033,11 +1032,11 @@ dependencies = [
 
 [[package]]
 name = "noodles-tabix"
-version = "0.47.0"
+version = "0.60.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fde991a31c6203845117944c1d5f697b69c382e37eb2d70f3e3f2b575fbca62d"
+checksum = "79018e289d9e285c964bebcb5d99d9c3815b8707b1d727ed3f59852d80d8e253"
 dependencies = [
- "byteorder",
+ "bstr",
  "indexmap",
  "noodles-bgzf",
  "noodles-core",
@@ -1046,9 +1045,9 @@ dependencies = [
 
 [[package]]
 name = "noodles-vcf"
-version = "0.69.0"
+version = "0.85.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70c72cbcfdfb14f0f76980dbe8f573f1bb7f9fa95eaa4780ee99aaa090c6d421"
+checksum = "cf85fea96e2455039e34b10441a00225be37235a0e7fcc381c40ba9206c13084"
 dependencies = [
  "indexmap",
  "memchr",
@@ -1761,6 +1760,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "zlib-rs"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3be3d40e40a133f9c916ee3f9f4fa2d9d63435b5fbe1bfc6d9dae0aa0ada1513"
 
 [[package]]
 name = "zmij"
