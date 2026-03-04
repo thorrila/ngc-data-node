@@ -11,7 +11,7 @@ blake3 = "1.5"
 # Parquet writing
 parquet = { version = "53.0", features = ["arrow"] }
 # Arrow for Parquet
-arrow = "53.0"
+arrow = "54.2"
 # CLI argument parser
 clap = { version = "4.0", features = ["derive"] }
 # Error handling
